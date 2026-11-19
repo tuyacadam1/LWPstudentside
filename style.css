@@ -152,13 +152,17 @@ input:focus { outline: none; border-color: #fbbf24; }
   padding: 14px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px;
 }
 
-/* CLEAR SQUAD SELECTION STYLES */
+/* SQUAD SELECTION STYLES */
 .squad-header-row {
   display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; gap: 8px;
 }
 .squad-counter-pill {
   background: #064e3b; border: 2px solid #10b981; color: #34d399;
-  font-weight: 900; font-size: 12px; padding: 4px 10px; border-radius: 12px;
+  font-weight: 900; font-size: 11px; padding: 4px 10px; border-radius: 12px;
+}
+.daily-reset-tag {
+  background: #0f172a; border: 1px solid #fbbf24; color: #fbbf24;
+  font-weight: 800; font-size: 11px; padding: 3px 9px; border-radius: 10px;
 }
 .active-squad-bar {
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px;
@@ -200,6 +204,61 @@ input:focus { outline: none; border-color: #fbbf24; }
 }
 .stat-line { font-size: 10px; color: #a5b4fc; font-weight: 700; }
 
+/* DAILY CLASSMATE ROSTER CARDS */
+.roster-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.opponent-card {
+  background: #1e1b4b;
+  border: 2px solid #4338ca;
+  border-radius: 16px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 10px;
+}
+.opponent-card.defeated-card {
+  opacity: 0.72;
+  border-color: #10b981;
+}
+.opp-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.opp-best-team {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  background: #0f172a;
+  padding: 8px;
+  border-radius: 12px;
+}
+.opp-pet-mini {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.opp-pet-mini img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+}
+.defeated-pill {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid #10b981;
+  color: #34d399;
+  font-weight: 900;
+  font-size: 11px;
+  text-align: center;
+  padding: 9px;
+  border-radius: 12px;
+}
+
 /* Miscrits Idle Sprite */
 .creature-sprite {
   width: 90px; height: 90px; object-fit: contain; transform-origin: bottom center;
@@ -228,26 +287,6 @@ input:focus { outline: none; border-color: #fbbf24; }
 .Mythic { background: #f43f5e; }
 .Legend { background: linear-gradient(135deg, #fbbf24, #d97706); color: #1e1b4b; }
 
-/* --- PVP LOBBY --- */
-.challenge-alert {
-  border-color: #fbbf24;
-  background: linear-gradient(135deg, #312e81, #4c1d95);
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  align-items: center;
-}
-.online-list { display: flex; flex-direction: column; gap: 8px; }
-.online-row {
-  background: #1e1b4b; border: 2px solid #4338ca; border-radius: 14px;
-  padding: 10px 14px; display: flex; justify-content: space-between; align-items: center;
-}
-.online-dot {
-  display: inline-block; width: 10px; height: 10px; background: #10b981;
-  border-radius: 50%; margin-right: 8px; box-shadow: 0 0 8px #10b981;
-}
-
 /* =========================================================
    MISCRITS MOBILE-FIRST SCENIC BATTLE ARENA
    ========================================================= */
@@ -269,7 +308,6 @@ input:focus { outline: none; border-color: #fbbf24; }
 .turn-pill.waiting { background: #475569; box-shadow: none; }
 .elem-guide { font-size: 11px; font-weight: 800; color: #fbbf24; }
 
-/* Scenic Sky + Forest Meadow Viewport */
 .arena-viewport {
   position: relative;
   border-radius: 16px;
@@ -284,20 +322,18 @@ input:focus { outline: none; border-color: #fbbf24; }
     #15803d 78%,
     #14532d 100%
   );
-  min-height: 270px;
+  min-height: 275px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   padding: 10px;
 }
 
-/* Subtle Sunbeam Rays */
 .arena-sunbeams {
   position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(circle at 50% 15%, rgba(255, 255, 255, 0.35), transparent 65%);
 }
 
-/* Screen Shake Effect */
 .arena-shake { animation: arenaShake 0.4s ease-in-out; }
 @keyframes arenaShake {
   0%, 100% { transform: translate(0, 0); }
@@ -307,7 +343,6 @@ input:focus { outline: none; border-color: #fbbf24; }
   80% { transform: translate(5px, 3px); }
 }
 
-/* Miscrits Top Corner Health Plates */
 .arena-hud-row {
   position: relative; z-index: 4;
   display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
@@ -325,7 +360,11 @@ input:focus { outline: none; border-color: #fbbf24; }
   font-size: 11px; font-weight: 900; margin-bottom: 4px;
 }
 .plate-name {
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 95px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 85px;
+}
+.flip-mini-btn {
+  background: #312e81; border: 1px solid #6366f1; color: white;
+  border-radius: 6px; padding: 1px 4px; font-size: 10px; cursor: pointer;
 }
 .hp-track {
   width: 100%; height: 10px; background: #1e293b;
@@ -340,14 +379,14 @@ input:focus { outline: none; border-color: #fbbf24; }
 .hp-fill.mid-hp { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
 
 .plate-bottom {
-  display: flex; justify-content: space-between; align-items: center; margin-top: 4px;
+  display: flex; justify-content: space-between; align-items: center; margin-top: 4px; gap: 4px;
 }
 .hp-numbers { font-size: 10px; font-weight: 800; color: #e2e8f0; }
-.bench-dots { display: flex; gap: 4px; }
-.b-dot { width: 9px; height: 9px; border-radius: 50%; background: #22c55e; border: 1.5px solid white; }
+.status-tags { font-size: 9px; font-weight: 900; color: #38bdf8; }
+.bench-dots { display: flex; gap: 3px; }
+.b-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; border: 1.5px solid white; }
 .b-dot.ko { background: #ef4444; opacity: 0.4; }
 
-/* Fighters & Grass Pedestals */
 .arena-fighters-row {
   position: relative; z-index: 3;
   display: grid; grid-template-columns: 1fr 1fr;
@@ -358,6 +397,13 @@ input:focus { outline: none; border-color: #fbbf24; }
   position: relative;
   display: flex; flex-direction: column; align-items: center; justify-content: flex-end;
 }
+.facing-wrap {
+  position: relative; z-index: 2;
+  transition: transform 0.25s ease;
+}
+.facing-wrap.face-right { transform: scaleX(-1); }
+.facing-wrap.face-left { transform: scaleX(1); }
+
 .grass-platform {
   width: 115px; height: 26px;
   background: radial-gradient(ellipse at center, #4ade80 0%, #166534 80%);
@@ -368,19 +414,11 @@ input:focus { outline: none; border-color: #fbbf24; }
 }
 
 .arena-sprite {
-  position: relative; z-index: 2;
-  width: 110px; height: 110px; object-fit: contain; transform-origin: bottom center;
+  width: 115px; height: 115px; object-fit: contain; transform-origin: bottom center;
   animation: miscritIdle 2s ease-in-out infinite;
   filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.55));
 }
-.opp-flip { transform: scaleX(-1); animation: miscritIdleFlip 2s ease-in-out infinite; }
-@keyframes miscritIdleFlip {
-  0%, 100% { transform: scaleX(-1) translateY(0) scaleY(1); }
-  25% { transform: scaleX(-1.04) translateY(2px) scaleY(0.95); }
-  60% { transform: scaleX(-0.97) translateY(-4px) scaleY(1.04); }
-}
 
-/* Floating Damage / Heal Popup Numbers */
 .dmg-popup {
   position: absolute; top: -18px; z-index: 10;
   font-size: 20px; font-weight: 900; color: #fef08a;
@@ -398,59 +436,54 @@ input:focus { outline: none; border-color: #fbbf24; }
   100% { opacity: 0; transform: translateY(-34px) scale(1); }
 }
 
-/* Flying Elemental Projectile */
 .projectile-orb {
   position: absolute; top: 58%; z-index: 9;
-  font-size: 38px; pointer-events: none;
-  filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.9));
+  font-size: 42px; pointer-events: none;
+  filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.95));
 }
-.fly-left-to-right { animation: flyRight 0.45s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
-.fly-right-to-left { animation: flyLeft 0.45s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+.fly-left-to-right { animation: flyRight 0.48s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
+.fly-right-to-left { animation: flyLeft 0.48s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
 @keyframes flyRight {
   0% { left: 22%; transform: scale(0.6) rotate(0deg); opacity: 1; }
-  85% { left: 72%; transform: scale(1.4) rotate(360deg); opacity: 1; }
-  100% { left: 76%; transform: scale(1.8); opacity: 0; }
+  85% { left: 72%; transform: scale(1.5) rotate(360deg); opacity: 1; }
+  100% { left: 76%; transform: scale(1.9); opacity: 0; }
 }
 @keyframes flyLeft {
   0% { left: 72%; transform: scale(0.6) rotate(0deg); opacity: 1; }
-  85% { left: 22%; transform: scale(1.4) rotate(-360deg); opacity: 1; }
-  100% { left: 18%; transform: scale(1.8); opacity: 0; }
+  85% { left: 22%; transform: scale(1.5) rotate(-360deg); opacity: 1; }
+  100% { left: 18%; transform: scale(1.9); opacity: 0; }
 }
 
-/* Sprite Hit / Lunge / Heal Animations */
-.anim-lunge-left { animation: lungeLeft 0.45s ease-in-out !important; }
-.anim-lunge-right { animation: lungeRight 0.45s ease-in-out !important; }
+.anim-lunge-right { animation: lungeForward 0.45s ease-in-out !important; }
+.anim-lunge-left { animation: lungeForward 0.45s ease-in-out !important; }
 .anim-hit { animation: hitFlash 0.45s ease-in-out !important; }
 .anim-heal { animation: healGlow 0.65s ease-in-out !important; }
 
-@keyframes lungeLeft {
+@keyframes lungeForward {
   0% { transform: translateX(0); }
-  45% { transform: translateX(70px) scale(1.15); }
+  45% { transform: translateX(-75px) scale(1.18); }
   100% { transform: translateX(0); }
-}
-@keyframes lungeRight {
-  0% { transform: scaleX(-1) translateX(0); }
-  45% { transform: scaleX(-1) translateX(70px) scale(1.15); }
-  100% { transform: scaleX(-1) translateX(0); }
 }
 @keyframes hitFlash {
   0%, 100% { filter: brightness(1); transform: translateX(0); }
-  25% { filter: brightness(3) sepia(1) hue-rotate(-50deg) saturate(5); transform: translateX(-8px); }
-  75% { filter: brightness(2.5); transform: translateX(8px); }
+  25% { filter: brightness(3) sepia(1) hue-rotate(-50deg) saturate(5); transform: translateX(10px); }
+  75% { filter: brightness(2.5); transform: translateX(-10px); }
 }
 @keyframes healGlow {
   0%, 100% { filter: drop-shadow(0 0 0 #10b981); }
   50% { filter: drop-shadow(0 0 22px #4ade80) brightness(1.45); transform: translateY(-10px); }
 }
 
-/* Announcer Strip */
 .arena-announcer {
   background: #1e1b4b; border: 2px solid #4338ca; border-radius: 12px;
   padding: 9px 12px; text-align: center; font-weight: 800; font-size: 12px;
   color: #fbbf24; margin: 10px 0;
 }
 
-/* Miscrits 4-Card Mobile Skill Deck */
+.skills-locked {
+  opacity: 0.55;
+  pointer-events: none;
+}
 .miscrit-skill-deck {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -476,7 +509,21 @@ input:focus { outline: none; border-color: #fbbf24; }
 .skill-heal { background: linear-gradient(180deg, #10b981, #047857); }
 .skill-ult { background: linear-gradient(180deg, #f59e0b, #b45309); color: #1e1b4b; }
 
-/* Leaderboard */
+.party-swap-bar {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  margin-top: 8px;
+}
+.swap-pet-btn {
+  background: #1e1b4b; border: 2px solid #4338ca; border-radius: 10px;
+  padding: 6px 4px; color: white; font-size: 10px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  cursor: pointer;
+}
+.swap-pet-btn.active-pet { border-color: #fbbf24; background: #312e81; cursor: default; }
+.swap-pet-btn.ko-pet { opacity: 0.35; cursor: not-allowed; }
+
 .leaderboard-stack { display: flex; flex-direction: column; gap: 8px; }
 .rank-row {
   background: #1e1b4b; border: 2px solid #4338ca; border-radius: 14px;
