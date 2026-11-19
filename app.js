@@ -19,6 +19,24 @@ function getElementFromId(itemId) {
   return ELEMENTS[hash % ELEMENTS.length];
 }
 
+function getTypeEffectivenessLabel(myElem, oppElem) {
+  if (
+    (myElem === 'Fire' && oppElem === 'Nature') ||
+    (myElem === 'Nature' && oppElem === 'Water') ||
+    (myElem === 'Water' && oppElem === 'Lightning') ||
+    (myElem === 'Lightning' && oppElem === 'Fire')
+  ) return '🔥 SUPER EFFECTIVE (1.5x)!';
+
+  if (
+    (oppElem === 'Fire' && myElem === 'Nature') ||
+    (oppElem === 'Nature' && myElem === 'Water') ||
+    (oppElem === 'Water' && myElem === 'Lightning') ||
+    (oppElem === 'Lightning' && myElem === 'Fire')
+  ) return '⚠️ Resisted (0.75x)';
+
+  return 'Neutral Matchup (1.0x)';
+}
+
 // =========================================================
 // RETRO MISCRITS-STYLE SYNTHESIZER (BGM + BATTLE SFX)
 // =========================================================
@@ -61,7 +79,6 @@ const SoundEngine = {
   startBattleBGM() {
     if (!this.enabled || this.bgmTimer) return;
     this.init();
-    // Upbeat fantasy RPG battle loop (C minor / G heroic progression)
     const melody = [
       261.63, 311.13, 392.00, 523.25,
       466.16, 392.00, 311.13, 392.00,
@@ -130,7 +147,8 @@ let state = {
   selectedSquad: [],
   activeBattleId: null,
   lastAnimTs: 0,
-  pollTimer: null
+  pollTimer: null,
+  customFlips: JSON.parse(localStorage.getItem('edugacha_flips') || '{}')
 };
 
 const toggleLoader = (show) => document.getElementById('loader').classList.toggle('hidden', !show);
@@ -181,7 +199,8 @@ document.getElementById('student-login-form').addEventListener('submit', async (
 document.getElementById('logout-btn').addEventListener('click', () => {
   SoundEngine.stopBGM();
   clearInterval(state.pollTimer);
-  state = { student: null, pool: [], inventory: [], pullCost: 10, selectedSquad: [], activeBattleId: null, lastAnimTs: 0, pollTimer: null };
+  state.student = null;
+  state.activeBattleId = null;
   document.getElementById('dashboard-view').classList.add('hidden');
   document.getElementById('login-view').classList.remove('hidden');
 });
@@ -309,7 +328,6 @@ function renderSquadPicker() {
   const squadBar = document.getElementById('active-squad-bar');
   const grid = document.getElementById('squad-picker-grid');
 
-  // Render Top 3-Slot Active Squad Tray
   let slotsHtml = '';
   for (let i = 0; i < 3; i++) {
     const pet = state.selectedSquad[i];
@@ -339,7 +357,6 @@ function renderSquadPicker() {
     return;
   }
 
-  // Render Selectable Collection Grid with Clear Borders & Slot Badges
   grid.innerHTML = state.inventory.map(pet => {
     const squadIndex = state.selectedSquad.findIndex(s => s.pullId === pet.pullId);
     const isSelected = squadIndex !== -1;
@@ -375,7 +392,7 @@ window.toggleSquadPet = (pullId) => {
 
 function startLobbyHeartbeat() {
   syncLobby();
-  state.pollTimer = setInterval(syncLobby, 3500);
+  state.pollTimer = setInterval(syncLobby, 2500);
 }
 
 async function syncLobby() {
@@ -383,7 +400,7 @@ async function syncLobby() {
 
   if (state.activeBattleId) {
     const bRes = await callGAS('pollBattle', { battleId: state.activeBattleId });
-    if (bRes.success) {
+    if (bRes && bRes.success && bRes.state) {
       renderBattleArena(bRes.state, bRes.status);
     }
     return;
@@ -395,7 +412,7 @@ async function syncLobby() {
     name: state.student.name
   });
 
-  if (!res.success) return;
+  if (!res || !res.success) return;
 
   const listEl = document.getElementById('online-players-list');
   if (!res.onlinePlayers.length) {
@@ -457,8 +474,27 @@ window.challengeStudent = async (oppId, oppName) => {
     SoundEngine.startBattleBGM();
     document.getElementById('pvp-lobby-view').classList.add('hidden');
     document.getElementById('pvp-battle-stage').classList.remove('hidden');
+
+    // Immediately show Challenger's lead pet so there are NEVER broken images while waiting!
+    const lead = state.selectedSquad[0];
+    const leadElem = lead.element || getElementFromId(lead.itemId);
+    const leadStats = RARITY_STATS[lead.rarity] || RARITY_STATS.Common;
+    document.getElementById('my-fighter-name').textContent = lead.name || lead.rarity;
+    document.getElementById('my-fighter-elem').textContent = `${ELEM_ICONS[leadElem]} ${leadElem}`;
+    document.getElementById('my-hp-text').textContent = `${leadStats.hp}/${leadStats.hp}`;
+    document.getElementById('my-battle-sprite').src = lead.imageUrl;
+    applyFacingDirection('my-facing-wrap', lead.itemId, 'right');
+
+    // Hide enemy sprite cleanly until opponent accepts
+    document.getElementById('opp-fighter-name').textContent = oppName;
+    document.getElementById('opp-fighter-elem').textContent = '⏳ Joining...';
+    document.getElementById('opp-hp-text').textContent = '---';
+    document.getElementById('opp-battle-sprite').classList.add('hidden');
+
+    document.getElementById('turn-indicator').textContent = '⏳ WAITING FOR OPPONENT...';
+    document.getElementById('turn-indicator').classList.add('waiting');
     document.getElementById('battle-log-box').textContent = `Waiting for ${oppName} to accept your 3v3 challenge...`;
-    document.getElementById('skills-panel').classList.add('hidden');
+    document.getElementById('skills-wrapper').classList.add('skills-locked');
   }
 };
 
@@ -494,6 +530,32 @@ function enterBattleArena(battleId, battleState, status) {
   renderBattleArena(battleState, status);
 }
 
+// Smart Facing Direction (Applies saved user flip or default left-to-right face-off)
+function applyFacingDirection(wrapId, itemId, side) {
+  const wrap = document.getElementById(wrapId);
+  if (!wrap) return;
+  const saved = state.customFlips[itemId];
+  if (saved) {
+    wrap.className = `facing-wrap ${saved}`;
+  } else {
+    wrap.className = side === 'left' ? 'facing-wrap face-right' : 'facing-wrap face-left';
+  }
+}
+
+// Manual Flip Button on HUD Plates (Remembers choice per creature!)
+window.flipSprite = (side) => {
+  SoundEngine.playSfx('select');
+  const wrapId = side === 'my' ? 'my-facing-wrap' : 'opp-facing-wrap';
+  const wrap = document.getElementById(wrapId);
+  const itemId = wrap.dataset.itemId;
+  const nextDir = wrap.classList.contains('face-right') ? 'face-left' : 'face-right';
+  wrap.className = `facing-wrap ${nextDir}`;
+  if (itemId) {
+    state.customFlips[itemId] = nextDir;
+    localStorage.setItem('edugacha_flips', JSON.stringify(state.customFlips));
+  }
+};
+
 function updateHpBar(fillEl, hp, maxHp) {
   const pct = Math.max(0, Math.min(100, (hp / maxHp) * 100));
   fillEl.style.width = `${pct}%`;
@@ -502,8 +564,15 @@ function updateHpBar(fillEl, hp, maxHp) {
   else if (pct <= 55) fillEl.classList.add('mid-hp');
 }
 
+function formatStatusTags(pet) {
+  const tags = [];
+  if (pet.shielded) tags.push('🛡️50%');
+  if (pet.defDebuff > 0) tags.push(`💔-${pet.defDebuff * 20}%DEF`);
+  return tags.join(' ');
+}
+
 function renderBattleArena(bState, status) {
-  if (!bState.p2Team || !bState.p2Team.length) return;
+  if (!bState || !bState.p2Team || !bState.p2Team.length) return;
 
   const isPlayer1 = bState.p1Id === state.student.id;
   const myTeam = isPlayer1 ? bState.p1Team : bState.p2Team;
@@ -514,35 +583,63 @@ function renderBattleArena(bState, status) {
   const myPet = myTeam[myIdx];
   const oppPet = oppTeam[oppIdx];
 
-  // Update My HUD Plate
+  // Ensure both sprites are visible once battle is ACTIVE
+  const mySprite = document.getElementById('my-battle-sprite');
+  const oppSprite = document.getElementById('opp-battle-sprite');
+  mySprite.classList.remove('hidden');
+  oppSprite.classList.remove('hidden');
+
+  // Update My HUD Plate & Facing
   document.getElementById('my-fighter-name').textContent = myPet.name || myPet.rarity;
   document.getElementById('my-fighter-elem').textContent = `${ELEM_ICONS[myPet.element]} ${myPet.element}`;
   updateHpBar(document.getElementById('my-hp-fill'), myPet.hp, myPet.maxHp);
   document.getElementById('my-hp-text').textContent = `${myPet.hp}/${myPet.maxHp}`;
-  document.getElementById('my-battle-sprite').src = myPet.imageUrl;
+  document.getElementById('my-status-tags').textContent = formatStatusTags(myPet);
+  mySprite.src = myPet.imageUrl;
+  document.getElementById('my-facing-wrap').dataset.itemId = myPet.itemId;
+  applyFacingDirection('my-facing-wrap', myPet.itemId, 'left');
   document.getElementById('my-bench-dots').innerHTML = myTeam.map(p => `<span class="b-dot ${p.hp <= 0 ? 'ko' : ''}"></span>`).join('');
 
-  // Update Enemy HUD Plate
+  // Update Enemy HUD Plate & Facing
   document.getElementById('opp-fighter-name').textContent = oppPet.name || oppPet.rarity;
   document.getElementById('opp-fighter-elem').textContent = `${ELEM_ICONS[oppPet.element]} ${oppPet.element}`;
   updateHpBar(document.getElementById('opp-hp-fill'), oppPet.hp, oppPet.maxHp);
   document.getElementById('opp-hp-text').textContent = `${oppPet.hp}/${oppPet.maxHp}`;
-  document.getElementById('opp-battle-sprite').src = oppPet.imageUrl;
+  document.getElementById('opp-status-tags').textContent = formatStatusTags(oppPet);
+  oppSprite.src = oppPet.imageUrl;
+  document.getElementById('opp-facing-wrap').dataset.itemId = oppPet.itemId;
+  applyFacingDirection('opp-facing-wrap', oppPet.itemId, 'right');
   document.getElementById('opp-bench-dots').innerHTML = oppTeam.map(p => `<span class="b-dot ${p.hp <= 0 ? 'ko' : ''}"></span>`).join('');
 
-  // Customize Elemental Skill Button for Active Pet
+  // Customize Elemental Skill Card & Matchup Hint
   document.getElementById('elem-skill-icon').textContent = ELEM_ICONS[myPet.element];
   document.getElementById('elem-skill-title').textContent = `${myPet.element.toUpperCase()} SURGE`;
+  document.getElementById('elem-skill-desc').textContent = getTypeEffectivenessLabel(myPet.element, oppPet.element);
+
+  // Render Tactical 3-Pet Swap Bar
+  document.getElementById('party-swap-bar').innerHTML = myTeam.map((pet, idx) => {
+    const isCurrent = idx === myIdx;
+    const isDead = pet.hp <= 0;
+    const cls = isCurrent ? 'active-pet' : (isDead ? 'ko-pet' : '');
+    return `
+      <button class="swap-pet-btn ${cls}" ${isCurrent || isDead ? 'disabled' : ''} onclick="swapBattlePet(${idx})">
+        <img src="${pet.imageUrl}" style="width:22px;height:22px;object-fit:contain;" alt="${pet.name}">
+        <span>${isCurrent ? 'ACTIVE' : (isDead ? 'KO' : `SWAP ${ELEM_ICONS[pet.element]}`)}</span>
+      </button>
+    `;
+  }).join('');
 
   // Play Skill Animation if a new turn happened
   if (bState.lastAction && bState.lastAction.ts !== state.lastAnimTs) {
     state.lastAnimTs = bState.lastAction.ts;
     document.getElementById('battle-log-box').textContent = bState.lastAction.text;
     playSkillAnimation(bState.lastAction, bState.lastAction.by === state.student.id);
+  } else if (!bState.lastAction) {
+    document.getElementById('battle-log-box').textContent = 'Battle Started! Challenger moves first!';
   }
 
   const turnPill = document.getElementById('turn-indicator');
-  const skillsPanel = document.getElementById('skills-panel');
+  const skillsWrapper = document.getElementById('skills-wrapper');
   const leaveBtn = document.getElementById('leave-battle-btn');
 
   if (status === 'FINISHED') {
@@ -550,7 +647,7 @@ function renderBattleArena(bState, status) {
     const didWin = bState.winnerId === state.student.id;
     turnPill.textContent = didWin ? '🏆 VICTORY! (+15 ⭐)' : '💀 DEFEAT';
     turnPill.classList.remove('waiting');
-    skillsPanel.classList.add('hidden');
+    skillsWrapper.classList.add('hidden');
     leaveBtn.classList.remove('hidden');
     if (didWin) {
       SoundEngine.playSfx('victory');
@@ -558,17 +655,18 @@ function renderBattleArena(bState, status) {
       renderHUD();
     }
   } else {
+    skillsWrapper.classList.remove('hidden');
     leaveBtn.classList.add('hidden');
     const isMyTurn = bState.turn === state.student.id;
-    turnPill.textContent = isMyTurn ? '⚡ YOUR TURN!' : '⏳ OPPONENT TURN...';
+    turnPill.textContent = isMyTurn ? '⚡ YOUR TURN — CHOOSE MOVE!' : '⏳ OPPONENT THINKING...';
     turnPill.classList.toggle('waiting', !isMyTurn);
-    skillsPanel.classList.toggle('hidden', !isMyTurn);
+    skillsWrapper.classList.toggle('skills-locked', !isMyTurn);
 
     const ultBtn = document.getElementById('ult-skill-btn');
     ultBtn.disabled = myPet.ultCooldown > 0;
     document.getElementById('ult-skill-desc').textContent = myPet.ultCooldown > 0
       ? `Cooldown: ${myPet.ultCooldown}t`
-      : 'Ultimate Burst';
+      : 'Heavy Ultimate';
   }
 }
 
@@ -576,7 +674,6 @@ function showFloatingNumber(popupEl, text, isHeal = false) {
   popupEl.textContent = text;
   popupEl.classList.remove('hidden', 'heal-pop');
   if (isHeal) popupEl.classList.add('heal-pop');
-  // Restart CSS animation
   void popupEl.offsetWidth;
   setTimeout(() => popupEl.classList.add('hidden'), 950);
 }
@@ -595,16 +692,21 @@ function playSkillAnimation(action, didIUseIt) {
     nature: '🌿',
     water: '🌊',
     lightning: '⚡',
-    heal: '💚',
+    heal: '🛡️',
     ultimate: '☄️'
   };
 
-  if (action.animType === 'heal') {
+  if (action.animType === 'swap') {
+    SoundEngine.playSfx('select');
+    const targetSprite = didIUseIt ? mySprite : oppSprite;
+    targetSprite.classList.add('anim-heal');
+    setTimeout(() => targetSprite.classList.remove('anim-heal'), 600);
+  } else if (action.animType === 'heal') {
     SoundEngine.playSfx('heal');
     const targetSprite = didIUseIt ? mySprite : oppSprite;
     const targetPopup = didIUseIt ? myPopup : oppPopup;
     targetSprite.classList.add('anim-heal');
-    showFloatingNumber(targetPopup, `+${action.heal} HP`, true);
+    showFloatingNumber(targetPopup, `🛡️ +${action.heal} HP`, true);
     setTimeout(() => targetSprite.classList.remove('anim-heal'), 650);
   } else if (action.animType) {
     const atkSprite = didIUseIt ? mySprite : oppSprite;
@@ -614,7 +716,6 @@ function playSkillAnimation(action, didIUseIt) {
     if (action.animType === 'strike') {
       atkSprite.classList.add(didIUseIt ? 'anim-lunge-left' : 'anim-lunge-right');
     } else {
-      // Launch flying elemental projectile across arena
       orb.textContent = FX_ICONS[action.animType] || '🔥';
       orb.classList.remove('hidden', 'fly-left-to-right', 'fly-right-to-left');
       void orb.offsetWidth;
@@ -639,13 +740,29 @@ function playSkillAnimation(action, didIUseIt) {
 
 window.useSkill = async (skillIndex) => {
   SoundEngine.playSfx('select');
-  document.getElementById('skills-panel').classList.add('hidden');
+  document.getElementById('skills-wrapper').classList.add('skills-locked');
   document.getElementById('turn-indicator').textContent = '⚔️ ATTACKING...';
 
   const res = await callGAS('submitTurn', {
     battleId: state.activeBattleId,
     studentId: state.student.id,
     skillIndex
+  });
+
+  if (res.success) {
+    renderBattleArena(res.state, res.status);
+  }
+};
+
+window.swapBattlePet = async (petIndex) => {
+  SoundEngine.playSfx('select');
+  document.getElementById('skills-wrapper').classList.add('skills-locked');
+  document.getElementById('turn-indicator').textContent = '🔄 SWAPPING PET...';
+
+  const res = await callGAS('swapPet', {
+    battleId: state.activeBattleId,
+    studentId: state.student.id,
+    petIndex
   });
 
   if (res.success) {
