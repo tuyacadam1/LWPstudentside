@@ -788,21 +788,17 @@ async function handleBattleEnd(didWin) {
   const turnPill = document.getElementById('turn-indicator');
   if (didWin) {
     SoundEngine.playSfx('victory');
-    turnPill.textContent = '🏆 VICTORY! (+15 ⭐)';
+    turnPill.textContent = '🏆 VICTORY! (+1 WIN)';
     turnPill.classList.remove('waiting');
-    b.logText = `🏆 You defeated ${b.defenderName}'s team and earned +15 ⭐! Come back tomorrow to battle them again!`;
+    b.logText = `🏆 You defeated ${b.defenderName}'s team (+1 Win)! Come back tomorrow to battle them again!`;
     renderBattleArena();
 
-    // Save daily victory & +15 pts to Google Sheets
-    const res = await callGAS('recordDailyWin', {
+    // Save daily victory to Google Sheets (counts wins only, no points added)
+    await callGAS('recordDailyWin', {
       classId: state.student.classId,
       attackerId: state.student.id,
       defenderId: b.defenderId
     });
-    if (res && res.success && !res.alreadyClaimed) {
-      state.student.points = res.newPoints || (state.student.points + 15);
-      renderHUD();
-    }
   } else {
     turnPill.textContent = '💀 DEFEAT — TRY AGAIN!';
     turnPill.classList.add('waiting');
