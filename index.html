@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link rel="icon" href="data:,">
   <title>EduGacha Player Portal</title>
   <link rel="stylesheet" href="style.css">
 </head>
@@ -109,7 +110,6 @@
             <span class="squad-counter-pill"><span id="squad-count">0</span> / 3 READY</span>
           </div>
 
-          <!-- Active 3-Slot Preview Bar -->
           <div id="active-squad-bar" class="active-squad-bar"></div>
 
           <p class="helper-hint">Tap any creature below to add or remove it from your battle party:</p>
@@ -125,7 +125,6 @@
       <!-- MISCRITS-STYLE MOBILE 3v3 BATTLE ARENA -->
       <div id="pvp-battle-stage" class="miscrits-arena hidden">
         
-        <!-- Arena Top Status Bar -->
         <div class="arena-top-bar">
           <span id="turn-indicator" class="turn-pill">YOUR TURN</span>
           <span class="elem-guide">🔥>🌿>💧>⚡>🔥</span>
@@ -135,17 +134,21 @@
         <div id="arena-viewport" class="arena-viewport">
           <div class="arena-sunbeams"></div>
 
-          <!-- Top HUD Plates (Miscrits Layout) -->
+          <!-- Top HUD Plates -->
           <div class="arena-hud-row">
             <!-- Left: My Creature Plate -->
             <div class="miscrit-plate my-plate">
               <div class="plate-top">
                 <span id="my-fighter-name" class="plate-name">My Pet</span>
-                <span id="my-fighter-elem" class="plate-elem">🔥</span>
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <span id="my-fighter-elem" class="plate-elem">🔥</span>
+                  <button type="button" class="flip-mini-btn" onclick="flipSprite('my')" title="Flip Facing Direction">🔄</button>
+                </div>
               </div>
               <div class="hp-track"><div id="my-hp-fill" class="hp-fill"></div></div>
               <div class="plate-bottom">
                 <span id="my-hp-text" class="hp-numbers">100/100</span>
+                <span id="my-status-tags" class="status-tags"></span>
                 <div id="my-bench-dots" class="bench-dots"></div>
               </div>
             </div>
@@ -154,32 +157,38 @@
             <div class="miscrit-plate opp-plate">
               <div class="plate-top">
                 <span id="opp-fighter-name" class="plate-name">Enemy Pet</span>
-                <span id="opp-fighter-elem" class="plate-elem">💧</span>
+                <div style="display:flex;align-items:center;gap:4px;">
+                  <span id="opp-fighter-elem" class="plate-elem">💧</span>
+                  <button type="button" class="flip-mini-btn" onclick="flipSprite('opp')" title="Flip Facing Direction">🔄</button>
+                </div>
               </div>
               <div class="hp-track"><div id="opp-hp-fill" class="hp-fill"></div></div>
               <div class="plate-bottom">
                 <span id="opp-hp-text" class="hp-numbers">100/100</span>
+                <span id="opp-status-tags" class="status-tags"></span>
                 <div id="opp-bench-dots" class="bench-dots"></div>
               </div>
             </div>
           </div>
 
-          <!-- Flying Projectile Orb -->
+          <!-- Flying Elemental Projectile Orb -->
           <div id="projectile-orb" class="projectile-orb hidden">🔥</div>
 
-          <!-- Fighters Standing on Arena Grass Platforms -->
+          <!-- Fighters Facing Each Other on Grass Platforms -->
           <div class="arena-fighters-row">
-            <!-- Left Fighter -->
             <div class="fighter-pedestal left-pedestal">
               <div id="my-dmg-popup" class="dmg-popup hidden">-25</div>
-              <img id="my-battle-sprite" class="arena-sprite" alt="My Pet">
+              <div id="my-facing-wrap" class="facing-wrap face-right">
+                <img id="my-battle-sprite" class="arena-sprite" alt="My Pet">
+              </div>
               <div class="grass-platform"></div>
             </div>
 
-            <!-- Right Fighter -->
             <div class="fighter-pedestal right-pedestal">
               <div id="opp-dmg-popup" class="dmg-popup hidden">-32</div>
-              <img id="opp-battle-sprite" class="arena-sprite opp-flip" alt="Enemy Pet">
+              <div id="opp-facing-wrap" class="facing-wrap face-left">
+                <img id="opp-battle-sprite" class="arena-sprite" alt="Enemy Pet">
+              </div>
               <div class="grass-platform"></div>
             </div>
           </div>
@@ -188,31 +197,36 @@
         <!-- Battle Announcer Strip -->
         <div id="battle-log-box" class="arena-announcer">Battle Ready! Choose a skill below.</div>
 
-        <!-- Miscrits 4-Card Skill Deck -->
-        <div id="skills-panel" class="miscrit-skill-deck">
-          <button class="m-skill-card skill-basic" onclick="useSkill(0)">
-            <span class="sk-icon">⚔️</span>
-            <span class="sk-title">QUICK CLAW</span>
-            <span class="sk-desc">Physical Hit</span>
-          </button>
-          <button class="m-skill-card skill-elem" onclick="useSkill(1)">
-            <span id="elem-skill-icon" class="sk-icon">🔥</span>
-            <span id="elem-skill-title" class="sk-title">ELEMENT SURGE</span>
-            <span class="sk-desc">1.5x Strong Type</span>
-          </button>
-          <button class="m-skill-card skill-heal" onclick="useSkill(2)">
-            <span class="sk-icon">💚</span>
-            <span class="sk-title">NATURE MEND</span>
-            <span class="sk-desc">Heal +32% HP</span>
-          </button>
-          <button id="ult-skill-btn" class="m-skill-card skill-ult" onclick="useSkill(3)">
-            <span class="sk-icon">☄️</span>
-            <span class="sk-title">CATACLYSM</span>
-            <span id="ult-skill-desc" class="sk-desc">Ultimate Burst</span>
-          </button>
+        <!-- Miscrits 4-Card Strategy Skill Deck -->
+        <div id="skills-wrapper" class="skills-wrapper">
+          <div id="skills-panel" class="miscrit-skill-deck">
+            <button type="button" class="m-skill-card skill-basic" onclick="useSkill(0)">
+              <span class="sk-icon">⚔️</span>
+              <span class="sk-title">ARMOR BREAK</span>
+              <span class="sk-desc">Hit + Lowers DEF</span>
+            </button>
+            <button type="button" class="m-skill-card skill-elem" onclick="useSkill(1)">
+              <span id="elem-skill-icon" class="sk-icon">🔥</span>
+              <span id="elem-skill-title" class="sk-title">ELEMENT SURGE</span>
+              <span id="elem-skill-desc" class="sk-desc">1.5x vs Weak Type</span>
+            </button>
+            <button type="button" class="m-skill-card skill-heal" onclick="useSkill(2)">
+              <span class="sk-icon">🛡️</span>
+              <span class="sk-title">GUARD & MEND</span>
+              <span class="sk-desc">50% Shield + Heal</span>
+            </button>
+            <button type="button" id="ult-skill-btn" class="m-skill-card skill-ult" onclick="useSkill(3)">
+              <span class="sk-icon">☄️</span>
+              <span class="sk-title">CATACLYSM</span>
+              <span id="ult-skill-desc" class="sk-desc">Heavy Ultimate</span>
+            </button>
+          </div>
+
+          <!-- Tactical 3-Pet Party Swap Row -->
+          <div id="party-swap-bar" class="party-swap-bar"></div>
         </div>
 
-        <button id="leave-battle-btn" class="game-btn btn-red full-width hidden" style="margin-top:12px;" onclick="exitBattleArena()">
+        <button type="button" id="leave-battle-btn" class="game-btn btn-red full-width hidden" style="margin-top:12px;" onclick="exitBattleArena()">
           🏁 RETURN TO ARENA LOBBY
         </button>
       </div>
