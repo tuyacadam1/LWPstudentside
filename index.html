@@ -41,15 +41,23 @@
       </div>
     </header>
 
-    <!-- 2 BIG ARCADE MENU BUTTONS -->
+    <!-- 4 BIG ARCADE MENU BUTTONS -->
     <nav class="menu-grid">
       <button class="menu-btn btn-pink active" data-tab="summon">
         <span class="icon">🎰</span>
-        <span class="label">SUMMON GACHA</span>
+        <span class="label">SUMMON</span>
       </button>
       <button class="menu-btn btn-purple" data-tab="collection">
         <span class="icon">📖</span>
-        <span class="label">MY COLLECTION (<span id="collection-count">0</span>)</span>
+        <span class="label">PETS (<span id="collection-count">0</span>)</span>
+      </button>
+      <button class="menu-btn btn-red" data-tab="pvp">
+        <span class="icon">⚔️</span>
+        <span class="label">3v3 ARENA</span>
+      </button>
+      <button class="menu-btn btn-gold" data-tab="leaderboard">
+        <span class="icon">🏆</span>
+        <span class="label">RANKINGS</span>
       </button>
     </nav>
 
@@ -71,16 +79,115 @@
         </button>
       </div>
 
-      <!-- Drop Rates Preview -->
       <div class="game-box">
         <h3 class="section-title">AVAILABLE CREATURES IN POOL</h3>
         <div id="pool-preview-grid" class="mini-grid"></div>
       </div>
     </section>
 
-    <!-- TAB 2: MY COLLECTION (MISCRIPEDIA) -->
+    <!-- TAB 2: MY COLLECTION -->
     <section id="tab-collection" class="tab-panel hidden">
       <div id="collection-grid" class="cards-grid"></div>
+    </section>
+
+    <!-- TAB 3: 3v3 ONLINE PVP ARENA -->
+    <section id="tab-pvp" class="tab-panel hidden">
+      
+      <!-- Incoming Challenge Alert -->
+      <div id="incoming-challenge-box" class="game-box challenge-alert hidden">
+        <h3>⚔️ INCOMING 3v3 CHALLENGE!</h3>
+        <p id="challenger-text">Someone wants to battle you!</p>
+        <button id="accept-challenge-btn" class="game-btn btn-green">✅ ACCEPT & FIGHT (WITH SELECTED 3)</button>
+      </div>
+
+      <!-- Lobby & 3-Pet Squad Selector -->
+      <div id="pvp-lobby-view">
+        <div class="game-box">
+          <h3 class="section-title">1. SELECT YOUR 3v3 BATTLE SQUAD (<span id="squad-count">0</span>/3)</h3>
+          <div id="squad-picker-grid" class="mini-grid"></div>
+        </div>
+
+        <div class="game-box">
+          <h3 class="section-title">2. ONLINE CLASSMATES READY TO BATTLE</h3>
+          <div id="online-players-list" class="online-list"></div>
+        </div>
+      </div>
+
+      <!-- Active Miscrits-Style 3v3 Battle Stage -->
+      <div id="pvp-battle-stage" class="battle-arena hidden">
+        <div class="arena-top-bar">
+          <span id="turn-indicator" class="turn-pill">YOUR TURN</span>
+          <span class="elem-guide">🔥 > 🌿 > 💧 > ⚡ > 🔥</span>
+        </div>
+
+        <!-- Battlefield Visuals -->
+        <div class="battlefield">
+          <!-- Left: Your Creature -->
+          <div class="combatant-zone left-zone">
+            <div class="hp-hud">
+              <div class="hud-name-row">
+                <span id="my-fighter-name">You</span>
+                <span id="my-fighter-elem" class="elem-tag">🔥 Fire</span>
+              </div>
+              <div class="hp-bar-bg"><div id="my-hp-fill" class="hp-bar-fill"></div></div>
+              <div class="hp-text" id="my-hp-text">100 / 100</div>
+              <div id="my-bench-dots" class="bench-dots"></div>
+            </div>
+            <div class="sprite-stage">
+              <img id="my-battle-sprite" class="battle-sprite" alt="My Pet">
+              <div id="my-fx-layer" class="fx-layer"></div>
+            </div>
+          </div>
+
+          <!-- Right: Opponent Creature -->
+          <div class="combatant-zone right-zone">
+            <div class="hp-hud">
+              <div class="hud-name-row">
+                <span id="opp-fighter-name">Enemy</span>
+                <span id="opp-fighter-elem" class="elem-tag">💧 Water</span>
+              </div>
+              <div class="hp-bar-bg"><div id="opp-hp-fill" class="hp-bar-fill"></div></div>
+              <div class="hp-text" id="opp-hp-text">100 / 100</div>
+              <div id="opp-bench-dots" class="bench-dots"></div>
+            </div>
+            <div class="sprite-stage">
+              <img id="opp-battle-sprite" class="battle-sprite opp-flip" alt="Enemy Pet">
+              <div id="opp-fx-layer" class="fx-layer"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Battle Log Banner -->
+        <div id="battle-log-box" class="battle-log">Waiting for move...</div>
+
+        <!-- 4 Miscrits Skill Buttons -->
+        <div id="skills-panel" class="skills-grid">
+          <button class="game-btn btn-blue skill-btn" onclick="useSkill(0)">
+            ⚔️ QUICK CLAW<br><small>Physical Strike</small>
+          </button>
+          <button class="game-btn btn-pink skill-btn" onclick="useSkill(1)">
+            ✨ ELEMENT SURGE<br><small>1.5x vs Weak Element</small>
+          </button>
+          <button class="game-btn btn-green skill-btn" onclick="useSkill(2)">
+            💚 NATURE MEND<br><small>Heal +32% HP</small>
+          </button>
+          <button id="ult-skill-btn" class="game-btn btn-gold skill-btn" onclick="useSkill(3)">
+            💥 CATACLYSM<br><small>Heavy Ultimate</small>
+          </button>
+        </div>
+
+        <button id="leave-battle-btn" class="game-btn btn-red full-width hidden" style="margin-top:14px;" onclick="exitBattleArena()">
+          🏁 RETURN TO LOBBY
+        </button>
+      </div>
+    </section>
+
+    <!-- TAB 4: PVP LEADERBOARD -->
+    <section id="tab-leaderboard" class="tab-panel hidden">
+      <div class="game-box">
+        <h3 class="section-title">🏆 CLASS ARENA CHAMPIONS</h3>
+        <div id="leaderboard-list" class="leaderboard-stack"></div>
+      </div>
     </section>
 
   </div>
