@@ -92,33 +92,30 @@
       <div id="collection-grid" class="cards-grid"></div>
     </section>
 
-    <!-- TAB 3: 3v3 ONLINE PVP ARENA -->
+    <!-- TAB 3: DAILY 3v3 BOT ARENA -->
     <section id="tab-pvp" class="tab-panel hidden">
-      
-      <!-- Incoming Challenge Alert -->
-      <div id="incoming-challenge-box" class="game-box challenge-alert hidden">
-        <h3>⚔️ INCOMING 3v3 CHALLENGE!</h3>
-        <p id="challenger-text">Someone wants to battle you!</p>
-        <button id="accept-challenge-btn" class="game-btn btn-green">✅ ACCEPT & FIGHT (WITH SELECTED 3)</button>
-      </div>
 
       <!-- Lobby & 3-Pet Squad Selector -->
       <div id="pvp-lobby-view">
         <div class="game-box">
           <div class="squad-header-row">
-            <h3 class="section-title" style="margin:0;">1. TAP TO PICK YOUR 3v3 SQUAD</h3>
+            <h3 class="section-title" style="margin:0;">1. YOUR 3v3 BATTLE SQUAD</h3>
             <span class="squad-counter-pill"><span id="squad-count">0</span> / 3 READY</span>
           </div>
 
           <div id="active-squad-bar" class="active-squad-bar"></div>
 
-          <p class="helper-hint">Tap any creature below to add or remove it from your battle party:</p>
+          <p class="helper-hint">Tap any creature below to customize your battle party:</p>
           <div id="squad-picker-grid" class="mini-grid"></div>
         </div>
 
         <div class="game-box">
-          <h3 class="section-title">2. ONLINE CLASSMATES READY TO BATTLE</h3>
-          <div id="online-players-list" class="online-list"></div>
+          <div class="squad-header-row">
+            <h3 class="section-title" style="margin:0;">2. DAILY CLASSMATE CHALLENGES (+15 ⭐)</h3>
+            <span class="daily-reset-tag">Resets Daily</span>
+          </div>
+          <p class="helper-hint">Defeat each classmate's strongest 3-pet team once per day!</p>
+          <div id="opponents-roster-list" class="roster-grid"></div>
         </div>
       </div>
 
@@ -153,7 +150,7 @@
               </div>
             </div>
 
-            <!-- Right: Enemy Creature Plate -->
+            <!-- Right: Enemy Bot Plate -->
             <div class="miscrit-plate opp-plate">
               <div class="plate-top">
                 <span id="opp-fighter-name" class="plate-name">Enemy Pet</span>
@@ -227,7 +224,7 @@
         </div>
 
         <button type="button" id="leave-battle-btn" class="game-btn btn-red full-width hidden" style="margin-top:12px;" onclick="exitBattleArena()">
-          🏁 RETURN TO ARENA LOBBY
+          🏁 RETURN TO CLASSMATE ROSTER
         </button>
       </div>
     </section>
