@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduGacha Player Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div id="loader" class="loader-overlay hidden">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- STUDENT LOGIN SCREEN -->
+  <div id="login-view" class="auth-container">
+    <div class="game-box auth-card">
+      <h1>👾 PLAYER LOGIN</h1>
+      <p>Enter your Student ID to play</p>
+      <form id="student-login-form">
+        <input type="text" id="student-id-input" required placeholder="e.g. STU-678140">
+        <p id="login-error" class="error-msg"></p>
+        <button type="submit" class="game-btn btn-green full-width">▶ ENTER WORLD</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- STUDENT GAME LOBBY -->
+  <div id="dashboard-view" class="game-container hidden">
+
+    <!-- Top Player HUD -->
+    <header class="hud-bar">
+      <div class="player-info">
+        <div class="hud-title" id="student-name">Player</div>
+        <span class="guild-tag" id="student-guild">Guild</span>
+      </div>
+      <div class="hud-right">
+        <div class="points-pill"><span id="student-points">0</span> ⭐</div>
+        <button id="logout-btn" class="game-btn btn-red btn-sm">EXIT</button>
+      </div>
+    </header>
+
+    <!-- 2 BIG ARCADE MENU BUTTONS -->
+    <nav class="menu-grid">
+      <button class="menu-btn btn-pink active" data-tab="summon">
+        <span class="icon">🎰</span>
+        <span class="label">SUMMON GACHA</span>
+      </button>
+      <button class="menu-btn btn-purple" data-tab="collection">
+        <span class="icon">📖</span>
+        <span class="label">MY COLLECTION (<span id="collection-count">0</span>)</span>
+      </button>
+    </nav>
+
+    <!-- TAB 1: SUMMON MACHINE -->
+    <section id="tab-summon" class="tab-panel active">
+      <div class="game-box summon-stage">
+        <div id="summon-portal" class="portal-ring">
+          <div id="portal-placeholder" class="portal-egg">🥚</div>
+          <img id="won-sprite" class="won-creature hidden" alt="Captured Creature">
+        </div>
+
+        <div id="won-banner" class="won-banner hidden">
+          <span id="won-rarity-badge" class="badge Common">COMMON</span>
+          <p class="capture-text">CAPTURED!</p>
+        </div>
+
+        <button id="summon-btn" class="game-btn btn-gold summon-cta">
+          ✨ SUMMON CREATURE (10 ⭐)
+        </button>
+      </div>
+
+      <!-- Drop Rates Preview -->
+      <div class="game-box">
+        <h3 class="section-title">AVAILABLE CREATURES IN POOL</h3>
+        <div id="pool-preview-grid" class="mini-grid"></div>
+      </div>
+    </section>
+
+    <!-- TAB 2: MY COLLECTION (MISCRIPEDIA) -->
+    <section id="tab-collection" class="tab-panel hidden">
+      <div id="collection-grid" class="cards-grid"></div>
+    </section>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
