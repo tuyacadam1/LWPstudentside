@@ -116,15 +116,25 @@ input:focus { outline: none; border-color: #fbbf24; }
 }
 .section-title { font-size: 13px; color: #fbbf24; margin-bottom: 12px; letter-spacing: 0.5px; }
 
+/* Crisp Sprite Rendering */
+.won-creature,
+.creature-sprite,
+.mini-sprite,
+.arena-sprite,
+.opp-pet-mini img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+}
+
 /* Summon Stage */
 .summon-stage { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 16px; }
 .portal-ring {
-  width: 155px; height: 155px; border-radius: 50%;
+  width: 190px; height: 190px; border-radius: 50%;
   background: radial-gradient(circle, #4338ca 0%, #1e1b4b 75%);
   border: 4px solid #fbbf24; display: flex; align-items: center; justify-content: center;
   box-shadow: 0 0 25px rgba(251, 191, 36, 0.35);
 }
-.portal-egg { font-size: 66px; animation: miscritIdle 2s ease-in-out infinite; }
+.portal-egg { font-size: 74px; animation: miscritIdle 2s ease-in-out infinite; }
 .portal-shake { animation: shake 0.45s ease-in-out infinite !important; }
 @keyframes shake {
   0%, 100% { transform: rotate(0deg) scale(1.05); }
@@ -132,7 +142,7 @@ input:focus { outline: none; border-color: #fbbf24; }
   75% { transform: rotate(12deg) scale(1.1); }
 }
 .won-creature {
-  width: 115px; height: 115px; object-fit: contain; transform-origin: bottom center;
+  width: 155px; height: 155px; object-fit: contain; transform-origin: bottom center;
   animation: popIn 0.4s ease-out, miscritIdle 2.2s ease-in-out 0.4s infinite;
   filter: drop-shadow(0 8px 8px rgba(0, 0, 0, 0.5));
 }
@@ -142,11 +152,12 @@ input:focus { outline: none; border-color: #fbbf24; }
   100% { transform: scale(1); }
 }
 .capture-text { font-weight: 900; font-size: 18px; color: #fbbf24; margin-top: 6px; }
+.capture-text.dupe-refund { color: #34d399; }
 .summon-cta { font-size: 16px; padding: 14px 24px; }
 
 /* Grids & Cards */
-.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 12px; }
-.mini-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(105px, 1fr)); gap: 10px; }
+.cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; }
+.mini-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; }
 .item-card {
   position: relative; background: #312e81; border: 2px solid #4338ca; border-radius: 16px;
   padding: 14px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 6px;
@@ -169,7 +180,7 @@ input:focus { outline: none; border-color: #fbbf24; }
 }
 .squad-slot {
   background: #0f172a; border: 2px dashed #4338ca; border-radius: 14px;
-  padding: 8px 4px; text-align: center; min-height: 82px;
+  padding: 8px 4px; text-align: center; min-height: 88px;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
 }
 .squad-slot.filled {
@@ -261,8 +272,8 @@ input:focus { outline: none; border-color: #fbbf24; }
   text-align: center;
 }
 .opp-pet-mini img {
-  width: 44px;
-  height: 44px;
+  width: 56px;
+  height: 56px;
   object-fit: contain;
 }
 .defeated-pill {
@@ -278,12 +289,12 @@ input:focus { outline: none; border-color: #fbbf24; }
 
 /* Miscrits Idle Sprite */
 .creature-sprite {
-  width: 90px; height: 90px; object-fit: contain; transform-origin: bottom center;
+  width: 125px; height: 125px; object-fit: contain; transform-origin: bottom center;
   animation: miscritIdle 2.2s ease-in-out infinite;
   filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.45));
 }
 .mini-sprite {
-  width: 52px; height: 52px; object-fit: contain; transform-origin: bottom center;
+  width: 72px; height: 72px; object-fit: contain; transform-origin: bottom center;
   animation: miscritIdle 2.2s ease-in-out infinite;
 }
 @keyframes miscritIdle {
@@ -311,7 +322,7 @@ input:focus { outline: none; border-color: #fbbf24; }
 }
 
 /* =========================================================
-   MISCRITS MOBILE-FIRST SCENIC BATTLE ARENA
+   MISCRITS LARGE SCENIC BATTLE ARENA
    ========================================================= */
 .miscrits-arena {
   background: #0f172a;
@@ -339,17 +350,17 @@ input:focus { outline: none; border-color: #fbbf24; }
   background: linear-gradient(
     180deg,
     #1d4ed8 0%,
-    #38bdf8 38%,
-    #bae6fd 56%,
-    #22c55e 57%,
-    #15803d 78%,
+    #38bdf8 34%,
+    #bae6fd 50%,
+    #22c55e 51%,
+    #15803d 75%,
     #14532d 100%
   );
-  min-height: 275px;
+  min-height: 365px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 10px;
+  padding: 12px;
 }
 
 .arena-sunbeams {
@@ -383,11 +394,11 @@ input:focus { outline: none; border-color: #fbbf24; }
   font-size: 11px; font-weight: 900; margin-bottom: 4px;
 }
 .plate-name {
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 85px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;
 }
 .flip-mini-btn {
   background: #312e81; border: 1px solid #6366f1; color: white;
-  border-radius: 6px; padding: 1px 4px; font-size: 10px; cursor: pointer;
+  border-radius: 6px; padding: 1px 5px; font-size: 10px; cursor: pointer;
 }
 .hp-track {
   width: 100%; height: 10px; background: #1e293b;
@@ -414,7 +425,7 @@ input:focus { outline: none; border-color: #fbbf24; }
   position: relative; z-index: 3;
   display: grid; grid-template-columns: 1fr 1fr;
   align-items: end;
-  padding-top: 24px;
+  padding-top: 40px;
 }
 .fighter-pedestal {
   position: relative;
@@ -424,27 +435,33 @@ input:focus { outline: none; border-color: #fbbf24; }
   position: relative; z-index: 2;
   transition: transform 0.25s ease;
 }
-.facing-wrap.face-right { transform: scaleX(-1); }
-.facing-wrap.face-left { transform: scaleX(1); }
+.facing-wrap.face-right { transform: scaleX(-1.18) scaleY(1.18); transform-origin: bottom center; }
+.facing-wrap.face-left { transform: scaleX(1.18) scaleY(1.18); transform-origin: bottom center; }
 
 .grass-platform {
-  width: 115px; height: 26px;
+  width: 155px; height: 32px;
   background: radial-gradient(ellipse at center, #4ade80 0%, #166534 80%);
   border: 2px solid #14532d;
   border-radius: 50%;
-  margin-top: -12px;
-  box-shadow: 0 6px 10px rgba(0, 0, 0, 0.45);
+  margin-top: -16px;
+  box-shadow: 0 8px 12px rgba(0, 0, 0, 0.5);
 }
 
 .arena-sprite {
-  width: 115px; height: 115px; object-fit: contain; transform-origin: bottom center;
+  width: 175px; height: 175px; object-fit: contain; transform-origin: bottom center;
   animation: miscritIdle 2s ease-in-out infinite;
-  filter: drop-shadow(0 8px 6px rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(0 10px 8px rgba(0, 0, 0, 0.6));
+}
+
+@media (max-width: 460px) {
+  .arena-viewport { min-height: 320px; }
+  .arena-sprite { width: 148px; height: 148px; }
+  .grass-platform { width: 130px; height: 26px; }
 }
 
 .dmg-popup {
-  position: absolute; top: -18px; z-index: 10;
-  font-size: 20px; font-weight: 900; color: #fef08a;
+  position: absolute; top: -26px; z-index: 10;
+  font-size: 22px; font-weight: 900; color: #fef08a;
   text-shadow: 0 2px 0 #991b1b, 0 0 8px #000000;
   animation: floatDamage 0.95s ease-out forwards;
   pointer-events: none;
@@ -461,7 +478,7 @@ input:focus { outline: none; border-color: #fbbf24; }
 
 .projectile-orb {
   position: absolute; top: 58%; z-index: 9;
-  font-size: 42px; pointer-events: none;
+  font-size: 46px; pointer-events: none;
   filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.95));
 }
 .fly-left-to-right { animation: flyRight 0.48s cubic-bezier(0.25, 0.8, 0.25, 1) forwards; }
