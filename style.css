@@ -204,6 +204,23 @@ input:focus { outline: none; border-color: #fbbf24; }
 }
 .stat-line { font-size: 10px; color: #a5b4fc; font-weight: 700; }
 
+/* Uncaught / Locked Black Silhouette */
+.locked-card {
+  opacity: 0.72;
+  border-color: #1e293b !important;
+  background: #0f172a !important;
+}
+.locked-silhouette {
+  filter: brightness(0) invert(0) drop-shadow(0 4px 6px rgba(0, 0, 0, 0.85)) !important;
+  animation: none !important;
+  opacity: 0.85;
+}
+.locked-tag {
+  background: #1e293b;
+  color: #94a3b8;
+  border: 1px solid #334155;
+}
+
 /* DAILY CLASSMATE ROSTER CARDS */
 .roster-grid {
   display: grid;
@@ -275,7 +292,7 @@ input:focus { outline: none; border-color: #fbbf24; }
   60% { transform: translateY(-4px) scaleX(0.97) scaleY(1.04); }
 }
 
-/* 6-Tier Rarity Badges */
+/* 7-Tier Rarity Badges */
 .badge {
   display: inline-block; padding: 3px 9px; border-radius: 20px;
   font-size: 10px; font-weight: 900; text-transform: uppercase; color: white;
@@ -286,6 +303,12 @@ input:focus { outline: none; border-color: #fbbf24; }
 .Epic { background: #a855f7; }
 .Mythic { background: #f43f5e; }
 .Legend { background: linear-gradient(135deg, #fbbf24, #d97706); color: #1e1b4b; }
+.Secret {
+  background: linear-gradient(135deg, #06b6d4, #ec4899, #fbbf24);
+  color: #ffffff;
+  border: 1px solid #ffffff;
+  box-shadow: 0 0 12px rgba(236, 72, 153, 0.8);
+}
 
 /* =========================================================
    MISCRITS MOBILE-FIRST SCENIC BATTLE ARENA
