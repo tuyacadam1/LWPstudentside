@@ -6,7 +6,8 @@ const RARITY_STATS = {
   Rare: { hp: 165, atk: 26, power: 3 },
   Epic: { hp: 205, atk: 33, power: 4 },
   Mythic: { hp: 250, atk: 41, power: 5 },
-  Legend: { hp: 300, atk: 50, power: 6 }
+  Legend: { hp: 300, atk: 50, power: 6 },
+  Secret: { hp: 360, atk: 62, power: 7 }
 };
 
 const ELEMENTS = ['Fire', 'Nature', 'Water', 'Lightning'];
@@ -186,7 +187,6 @@ document.getElementById('student-login-form').addEventListener('submit', async (
     state.inventory = res.inventory;
     state.pullCost = res.pullCost || 10;
 
-    // Auto-select top 3 strongest pets by default
     const sorted = [...state.inventory].sort((a, b) => {
       const pa = (RARITY_STATS[a.rarity] || RARITY_STATS.Common).power;
       const pb = (RARITY_STATS[b.rarity] || RARITY_STATS.Common).power;
@@ -239,7 +239,6 @@ async function refreshStudentPortal() {
     state.inventory = res.inventory;
     state.pullCost = res.pullCost || 10;
 
-    // Keep valid selected squad items or auto-fill top 3 if empty
     const validIds = new Set(state.inventory.map(p => p.pullId));
     state.selectedSquad = state.selectedSquad.filter(p => validIds.has(p.pullId));
     if (state.selectedSquad.length === 0 && state.inventory.length > 0) {
@@ -338,6 +337,7 @@ document.getElementById('summon-btn').addEventListener('click', async () => {
     wonBanner.classList.remove('hidden');
 
     renderHUD();
+    renderPoolPreview();
     renderCollection();
     renderSquadPicker();
   } else {
@@ -346,51 +346,75 @@ document.getElementById('summon-btn').addEventListener('click', async () => {
   }
 });
 
+// --- POOL PREVIEW (Uncaught creatures appear as Black Silhouettes) ---
 function renderPoolPreview() {
   const grid = document.getElementById('pool-preview-grid');
+  const unlockedIds = new Set(state.inventory.map(i => i.itemId));
+
   grid.innerHTML = state.pool.map((item, idx) => {
+    const isUnlocked = unlockedIds.has(item.id);
     const elem = item.element || getElementFromId(item.id);
-    const critterName = item.name || `${item.rarity} Critter`;
+    const critterName = isUnlocked ? (item.name || `${item.rarity} Critter`) : '??? (LOCKED)';
     return `
-      <div class="mini-card">
-        <img src="${item.imageUrl}" class="mini-sprite" style="animation-delay: -${(idx * 0.3) % 2}s;" alt="${critterName}">
+      <div class="mini-card ${isUnlocked ? '' : 'locked-card'}">
+        <img src="${item.imageUrl}" class="mini-sprite ${isUnlocked ? '' : 'locked-silhouette'}" style="animation-delay: -${(idx * 0.3) % 2}s;" alt="${critterName}">
         <div style="margin-top:6px;">
           <div style="font-weight:800;font-size:11px;margin-bottom:4px;">${critterName}</div>
           <span class="badge ${item.rarity}">${item.rarity}</span>
-          <div class="stat-line" style="margin-top:4px;">${ELEM_ICONS[elem]} ${elem}</div>
+          <div class="stat-line" style="margin-top:4px;">${isUnlocked ? `${ELEM_ICONS[elem]} ${elem}` : '🔒 Uncaught'}</div>
         </div>
       </div>
     `;
   }).join('');
 }
 
-// --- COLLECTION ---
+// --- COLLECTION / PET DEX (Shows Caught + Black Silhouettes for Uncaught) ---
 function renderCollection() {
-  document.getElementById('collection-count').textContent = state.inventory.length;
+  const countMap = {};
+  state.inventory.forEach(entry => {
+    countMap[entry.itemId] = (countMap[entry.itemId] || 0) + 1;
+  });
+
+  const uniqueCaught = Object.keys(countMap).length;
+  document.getElementById('collection-count').textContent = `${uniqueCaught}/${state.pool.length}`;
   const grid = document.getElementById('collection-grid');
 
-  if (!state.inventory.length) {
-    grid.innerHTML = '<div class="game-box" style="grid-column:1/-1;text-align:center;">No creatures captured yet!</div>';
+  if (!state.pool.length && !state.inventory.length) {
+    grid.innerHTML = '<div class="game-box" style="grid-column:1/-1;text-align:center;">No creatures in the world yet!</div>';
     return;
   }
 
-  const grouped = {};
-  state.inventory.forEach(entry => {
-    if (!grouped[entry.itemId]) grouped[entry.itemId] = { ...entry, count: 1 };
-    else grouped[entry.itemId].count++;
+  const dexMap = new Map();
+  state.pool.forEach(p => dexMap.set(p.id, p));
+  state.inventory.forEach(inv => {
+    if (!dexMap.has(inv.itemId)) {
+      dexMap.set(inv.itemId, {
+        id: inv.itemId,
+        name: inv.name,
+        rarity: inv.rarity,
+        element: inv.element,
+        imageUrl: inv.imageUrl
+      });
+    }
   });
 
-  grid.innerHTML = Object.values(grouped).map((item, idx) => {
+  const allEntries = Array.from(dexMap.values());
+
+  grid.innerHTML = allEntries.map((item, idx) => {
+    const ownedCount = countMap[item.id] || 0;
+    const isUnlocked = ownedCount > 0;
     const stats = RARITY_STATS[item.rarity] || RARITY_STATS.Common;
-    const elem = item.element || getElementFromId(item.itemId);
-    const critterName = item.name || `${item.rarity} Critter`;
+    const elem = item.element || getElementFromId(item.id);
+    const critterName = isUnlocked ? (item.name || `${item.rarity} Critter`) : '???';
+
     return `
-      <div class="item-card">
-        ${item.count > 1 ? `<span class="dupe-badge">x${item.count}</span>` : ''}
-        <img src="${item.imageUrl}" class="creature-sprite" style="animation-delay: -${(idx * 0.4) % 2}s;" alt="${critterName}">
+      <div class="item-card ${isUnlocked ? '' : 'locked-card'}">
+        ${ownedCount > 1 ? `<span class="dupe-badge">x${ownedCount}</span>` : ''}
+        ${!isUnlocked ? `<span class="dupe-badge locked-tag">🔒 LOCKED</span>` : ''}
+        <img src="${item.imageUrl}" class="creature-sprite ${isUnlocked ? '' : 'locked-silhouette'}" style="animation-delay: -${(idx * 0.4) % 2}s;" alt="${critterName}">
         <h4 style="font-size:15px;">${critterName}</h4>
         <span class="badge ${item.rarity}">${item.rarity}</span>
-        <div class="stat-line">${ELEM_ICONS[elem]} ${elem} • ❤️ ${stats.hp} • ⚔️ ${stats.atk}</div>
+        <div class="stat-line">${isUnlocked ? `${ELEM_ICONS[elem]} ${elem} • ❤️ ${stats.hp} • ⚔️ ${stats.atk}` : 'Summon to Unlock!'}</div>
       </div>
     `;
   }).join('');
@@ -644,7 +668,6 @@ function renderBattleArena() {
   const myPet = b.myTeam[b.myActive];
   const oppPet = b.oppTeam[b.oppActive];
 
-  // Update My HUD Plate
   document.getElementById('my-fighter-name').textContent = myPet.name;
   document.getElementById('my-fighter-elem').textContent = `${ELEM_ICONS[myPet.element]} ${myPet.element}`;
   updateHpBar(document.getElementById('my-hp-fill'), myPet.hp, myPet.maxHp);
@@ -655,7 +678,6 @@ function renderBattleArena() {
   applyFacingDirection('my-facing-wrap', myPet.itemId, 'left');
   document.getElementById('my-bench-dots').innerHTML = b.myTeam.map(p => `<span class="b-dot ${p.hp <= 0 ? 'ko' : ''}"></span>`).join('');
 
-  // Update Enemy Bot HUD Plate
   document.getElementById('opp-fighter-name').textContent = oppPet.name;
   document.getElementById('opp-fighter-elem').textContent = `${ELEM_ICONS[oppPet.element]} ${oppPet.element}`;
   updateHpBar(document.getElementById('opp-hp-fill'), oppPet.hp, oppPet.maxHp);
@@ -666,12 +688,10 @@ function renderBattleArena() {
   applyFacingDirection('opp-facing-wrap', oppPet.itemId, 'right');
   document.getElementById('opp-bench-dots').innerHTML = b.oppTeam.map(p => `<span class="b-dot ${p.hp <= 0 ? 'ko' : ''}"></span>`).join('');
 
-  // Customize Elemental Skill Card
   document.getElementById('elem-skill-icon').textContent = ELEM_ICONS[myPet.element];
   document.getElementById('elem-skill-title').textContent = `${myPet.element.toUpperCase()} SURGE`;
   document.getElementById('elem-skill-desc').textContent = getTypeEffectivenessLabel(myPet.element, oppPet.element);
 
-  // Render Tactical 3-Pet Swap Bar
   document.getElementById('party-swap-bar').innerHTML = b.myTeam.map((pet, idx) => {
     const isCurrent = idx === b.myActive;
     const isDead = pet.hp <= 0;
@@ -872,7 +892,6 @@ async function handleBattleEnd(didWin) {
     b.logText = `🏆 You defeated ${b.defenderName}'s team (+1 Win)! Saving victory...`;
     b.saving = true;
 
-    // Immediately lock opponent locally so they cannot be battled again today
     const defeatedOpp = state.opponents.find(o => o.id === b.defenderId);
     if (defeatedOpp) defeatedOpp.defeatedToday = true;
     renderOpponentsList();
