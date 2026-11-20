@@ -13,6 +13,81 @@ const RARITY_STATS = {
 const ELEMENTS = ['Fire', 'Nature', 'Water', 'Lightning'];
 const ELEM_ICONS = { Fire: '🔥', Nature: '🌿', Water: '💧', Lightning: '⚡' };
 
+// =========================================================
+// AUTO-TRIM TRANSPARENT PNG MARGINS SO CREATURES ARE HUGE
+// =========================================================
+const trimmedSpriteCache = {};
+
+function trimTransparentImage(dataUrl) {
+  if (!dataUrl || !dataUrl.startsWith('data:image')) return Promise.resolve(dataUrl);
+  if (trimmedSpriteCache[dataUrl]) return Promise.resolve(trimmedSpriteCache[dataUrl]);
+
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const w = img.width;
+        const h = img.height;
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+
+        const pixels = ctx.getImageData(0, 0, w, h).data;
+        let minX = w, minY = h, maxX = 0, maxY = 0;
+        let foundPixel = false;
+
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            const alpha = pixels[(y * w + x) * 4 + 3];
+            if (alpha > 15) {
+              if (x < minX) minX = x;
+              if (x > maxX) maxX = x;
+              if (y < minY) minY = y;
+              if (y > maxY) maxY = y;
+              foundPixel = true;
+            }
+          }
+        }
+
+        if (!foundPixel) {
+          trimmedSpriteCache[dataUrl] = dataUrl;
+          return resolve(dataUrl);
+        }
+
+        const cropW = maxX - minX + 1;
+        const cropH = maxY - minY + 1;
+        const outCanvas = document.createElement('canvas');
+        outCanvas.width = cropW;
+        outCanvas.height = cropH;
+        const outCtx = outCanvas.getContext('2d');
+        outCtx.drawImage(canvas, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
+
+        const trimmedUrl = outCanvas.toDataURL('image/png');
+        trimmedSpriteCache[dataUrl] = trimmedUrl;
+        resolve(trimmedUrl);
+      } catch (e) {
+        resolve(dataUrl);
+      }
+    };
+    img.onerror = () => resolve(dataUrl);
+    img.src = dataUrl;
+  });
+}
+
+async function trimAllSprites() {
+  const urls = new Set([
+    ...state.pool.map(p => p.imageUrl),
+    ...state.inventory.map(i => i.imageUrl)
+  ]);
+  for (const url of urls) {
+    if (url) await trimTransparentImage(url);
+  }
+  state.pool.forEach(p => { if (trimmedSpriteCache[p.imageUrl]) p.imageUrl = trimmedSpriteCache[p.imageUrl]; });
+  state.inventory.forEach(i => { if (trimmedSpriteCache[i.imageUrl]) i.imageUrl = trimmedSpriteCache[i.imageUrl]; });
+}
+
 function getElementFromId(itemId) {
   let hash = 0;
   const str = String(itemId);
@@ -187,6 +262,8 @@ document.getElementById('student-login-form').addEventListener('submit', async (
     state.inventory = res.inventory;
     state.pullCost = res.pullCost || 10;
 
+    await trimAllSprites();
+
     const sorted = [...state.inventory].sort((a, b) => {
       const pa = (RARITY_STATS[a.rarity] || RARITY_STATS.Common).power;
       const pb = (RARITY_STATS[b.rarity] || RARITY_STATS.Common).power;
@@ -239,8 +316,10 @@ async function refreshStudentPortal() {
     state.inventory = res.inventory;
     state.pullCost = res.pullCost || 10;
 
-    const validIds = new Set(state.inventory.map(p => p.pullId));
-    state.selectedSquad = state.selectedSquad.filter(p => validIds.has(p.pullId));
+    await trimAllSprites();
+
+    const validIds = new Set(state.inventory.map(p => p.itemId));
+    state.selectedSquad = state.selectedSquad.filter(p => validIds.has(p.itemId));
     if (state.selectedSquad.length === 0 && state.inventory.length > 0) {
       const sorted = [...state.inventory].sort((a, b) => {
         const pa = (RARITY_STATS[a.rarity] || RARITY_STATS.Common).power;
@@ -320,13 +399,12 @@ document.getElementById('summon-btn').addEventListener('click', async () => {
   egg.classList.remove('portal-shake');
 
   if (res.success) {
-    SoundEngine.playSfx('victory');
     state.student.points = res.newPoints;
-    state.inventory.push(res.wonItem);
-    if (state.selectedSquad.length < 3) state.selectedSquad.push(res.wonItem);
+    const trimmedUrl = await trimTransparentImage(res.wonItem.imageUrl);
+    res.wonItem.imageUrl = trimmedUrl;
 
     egg.classList.add('hidden');
-    wonSprite.src = res.wonItem.imageUrl;
+    wonSprite.src = trimmedUrl;
     wonSprite.classList.remove('hidden');
 
     const elem = res.wonItem.element || getElementFromId(res.wonItem.itemId);
@@ -334,6 +412,23 @@ document.getElementById('summon-btn').addEventListener('click', async () => {
     const badge = document.getElementById('won-rarity-badge');
     badge.className = `badge ${res.wonItem.rarity}`;
     badge.textContent = `${critterName} • ${res.wonItem.rarity} • ${ELEM_ICONS[elem]} ${elem}`;
+
+    const captureTextEl = wonBanner.querySelector('.capture-text');
+
+    if (res.isDuplicate) {
+      SoundEngine.playSfx('heal');
+      captureTextEl.textContent = `♻️ DUPLICATE! +${res.refundPoints} ⭐ REFUNDED!`;
+      captureTextEl.classList.add('dupe-refund');
+    } else {
+      SoundEngine.playSfx('victory');
+      captureTextEl.textContent = 'CAPTURED!';
+      captureTextEl.classList.remove('dupe-refund');
+      if (!state.inventory.some(i => i.itemId === res.wonItem.itemId)) {
+        state.inventory.push(res.wonItem);
+        if (state.selectedSquad.length < 3) state.selectedSquad.push(res.wonItem);
+      }
+    }
+
     wonBanner.classList.remove('hidden');
 
     renderHUD();
@@ -368,15 +463,10 @@ function renderPoolPreview() {
   }).join('');
 }
 
-// --- COLLECTION / PET DEX (Shows Caught + Black Silhouettes for Uncaught) ---
+// --- COLLECTION / PET DEX (Single Unique Entry + Black Silhouettes for Uncaught) ---
 function renderCollection() {
-  const countMap = {};
-  state.inventory.forEach(entry => {
-    countMap[entry.itemId] = (countMap[entry.itemId] || 0) + 1;
-  });
-
-  const uniqueCaught = Object.keys(countMap).length;
-  document.getElementById('collection-count').textContent = `${uniqueCaught}/${state.pool.length}`;
+  const ownedSet = new Set(state.inventory.map(entry => entry.itemId));
+  document.getElementById('collection-count').textContent = `${ownedSet.size}/${state.pool.length}`;
   const grid = document.getElementById('collection-grid');
 
   if (!state.pool.length && !state.inventory.length) {
@@ -401,15 +491,13 @@ function renderCollection() {
   const allEntries = Array.from(dexMap.values());
 
   grid.innerHTML = allEntries.map((item, idx) => {
-    const ownedCount = countMap[item.id] || 0;
-    const isUnlocked = ownedCount > 0;
+    const isUnlocked = ownedSet.has(item.id);
     const stats = RARITY_STATS[item.rarity] || RARITY_STATS.Common;
     const elem = item.element || getElementFromId(item.id);
     const critterName = isUnlocked ? (item.name || `${item.rarity} Critter`) : '???';
 
     return `
       <div class="item-card ${isUnlocked ? '' : 'locked-card'}">
-        ${ownedCount > 1 ? `<span class="dupe-badge">x${ownedCount}</span>` : ''}
         ${!isUnlocked ? `<span class="dupe-badge locked-tag">🔒 LOCKED</span>` : ''}
         <img src="${item.imageUrl}" class="creature-sprite ${isUnlocked ? '' : 'locked-silhouette'}" style="animation-delay: -${(idx * 0.4) % 2}s;" alt="${critterName}">
         <h4 style="font-size:15px;">${critterName}</h4>
@@ -434,8 +522,8 @@ function renderSquadPicker() {
       const elem = pet.element || getElementFromId(pet.itemId);
       const name = pet.name || `${pet.rarity} Critter`;
       slotsHtml += `
-        <div class="squad-slot filled" onclick="toggleSquadPet('${pet.pullId}')">
-          <img src="${pet.imageUrl}" style="width:42px;height:42px;object-fit:contain;" alt="${name}">
+        <div class="squad-slot filled" onclick="toggleSquadPet('${pet.itemId}')">
+          <img src="${pet.imageUrl}" style="width:48px;height:48px;object-fit:contain;" alt="${name}">
           <div style="font-size:10px;font-weight:900;color:#34d399;margin-top:2px;">#${i + 1} ${name}</div>
           <div style="font-size:9px;color:#fbbf24;">${ELEM_ICONS[elem]} ${pet.rarity}</div>
         </div>
@@ -457,13 +545,13 @@ function renderSquadPicker() {
   }
 
   grid.innerHTML = state.inventory.map(pet => {
-    const squadIndex = state.selectedSquad.findIndex(s => s.pullId === pet.pullId);
+    const squadIndex = state.selectedSquad.findIndex(s => s.itemId === pet.itemId);
     const isSelected = squadIndex !== -1;
     const elem = pet.element || getElementFromId(pet.itemId);
     const stats = RARITY_STATS[pet.rarity] || RARITY_STATS.Common;
     const critterName = pet.name || `${pet.rarity} Critter`;
     return `
-      <div class="mini-card ${isSelected ? 'selected-squad' : ''}" onclick="toggleSquadPet('${pet.pullId}')">
+      <div class="mini-card ${isSelected ? 'selected-squad' : ''}" onclick="toggleSquadPet('${pet.itemId}')">
         ${isSelected ? `<span class="squad-check-badge">✓ #${squadIndex + 1}</span>` : ''}
         <img src="${pet.imageUrl}" class="mini-sprite" alt="${critterName}">
         <div style="font-weight:800;font-size:11px;margin-top:4px;">${critterName}</div>
@@ -474,28 +562,36 @@ function renderSquadPicker() {
   }).join('');
 }
 
-window.toggleSquadPet = (pullId) => {
+window.toggleSquadPet = (itemId) => {
   SoundEngine.playSfx('select');
-  const existsIdx = state.selectedSquad.findIndex(p => p.pullId === pullId);
+  const existsIdx = state.selectedSquad.findIndex(p => p.itemId === itemId);
   if (existsIdx !== -1) {
     state.selectedSquad.splice(existsIdx, 1);
   } else {
     if (state.selectedSquad.length >= 3) {
       return alert('Your 3v3 squad is full! Tap a selected pet to swap it out.');
     }
-    const pet = state.inventory.find(p => p.pullId === pullId);
+    const pet = state.inventory.find(p => p.itemId === itemId);
     if (pet) state.selectedSquad.push(pet);
   }
   renderSquadPicker();
 };
 
-function renderOpponentsList() {
+async function renderOpponentsList() {
   const listEl = document.getElementById('opponents-roster-list');
   if (!listEl) return;
 
   if (!state.opponents.length) {
     listEl.innerHTML = '<p class="stat-line">No other classmates in this guild yet.</p>';
     return;
+  }
+
+  for (const opp of state.opponents) {
+    for (const pet of (opp.bestTeam || [])) {
+      if (pet.imageUrl) {
+        pet.imageUrl = await trimTransparentImage(pet.imageUrl);
+      }
+    }
   }
 
   listEl.innerHTML = state.opponents.map(opp => {
@@ -555,7 +651,7 @@ async function loadArenaRoster() {
   }
 
   state.opponents = res.opponents || [];
-  renderOpponentsList();
+  await renderOpponentsList();
 
   const lbEl = document.getElementById('leaderboard-list');
   if (lbEl) {
@@ -581,7 +677,7 @@ function buildCombatant(item) {
     itemId: item.itemId,
     name: item.name || `${item.rarity} Critter`,
     rarity: item.rarity,
-    imageUrl: item.imageUrl,
+    imageUrl: trimmedSpriteCache[item.imageUrl] || item.imageUrl,
     element: element,
     hp: base.hp,
     maxHp: base.hp,
@@ -698,7 +794,7 @@ function renderBattleArena() {
     const cls = isCurrent ? 'active-pet' : (isDead ? 'ko-pet' : '');
     return `
       <button type="button" class="swap-pet-btn ${cls}" ${isCurrent || isDead ? 'disabled' : ''} onclick="swapBattlePet(${idx})">
-        <img src="${pet.imageUrl}" style="width:22px;height:22px;object-fit:contain;" alt="${pet.name}">
+        <img src="${pet.imageUrl}" style="width:24px;height:24px;object-fit:contain;" alt="${pet.name}">
         <span>${isCurrent ? 'ACTIVE' : (isDead ? 'KO' : `SWAP ${ELEM_ICONS[pet.element]}`)}</span>
       </button>
     `;
@@ -894,7 +990,7 @@ async function handleBattleEnd(didWin) {
 
     const defeatedOpp = state.opponents.find(o => o.id === b.defenderId);
     if (defeatedOpp) defeatedOpp.defeatedToday = true;
-    renderOpponentsList();
+    await renderOpponentsList();
 
     renderBattleArena();
     if (leaveBtn) leaveBtn.disabled = true;
