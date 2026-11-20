@@ -415,6 +415,52 @@ window.toggleSquadPet = (pullId) => {
   renderSquadPicker();
 };
 
+function renderOpponentsList() {
+  const listEl = document.getElementById('opponents-roster-list');
+  if (!listEl) return;
+
+  if (!state.opponents.length) {
+    listEl.innerHTML = '<p class="stat-line">No other classmates in this guild yet.</p>';
+    return;
+  }
+
+  listEl.innerHTML = state.opponents.map(opp => {
+    const hasTeam = opp.bestTeam && opp.bestTeam.length > 0;
+    const teamHtml = hasTeam
+      ? opp.bestTeam.map(pet => {
+          const elem = pet.element || getElementFromId(pet.itemId);
+          return `
+            <div class="opp-pet-mini">
+              <img src="${pet.imageUrl}" alt="${pet.name}">
+              <div style="font-size:9px;font-weight:800;margin-top:2px;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pet.name}</div>
+              <span class="badge ${pet.rarity}" style="font-size:8px;padding:2px 6px;margin-top:2px;">${ELEM_ICONS[elem]} ${pet.rarity}</span>
+            </div>
+          `;
+        }).join('')
+      : '<div style="grid-column:1/-1;text-align:center;font-size:11px;color:#a5b4fc;padding:12px;">No creatures summoned yet</div>';
+
+    let actionBtnHtml = '';
+    if (opp.defeatedToday) {
+      actionBtnHtml = `<div class="defeated-pill">✅ DEFEATED TODAY • Come back tomorrow!</div>`;
+    } else if (!hasTeam) {
+      actionBtnHtml = `<button class="game-btn btn-blue full-width" disabled>NO TEAM TO BATTLE</button>`;
+    } else {
+      actionBtnHtml = `<button class="game-btn btn-red full-width" onclick="startBotBattle('${opp.id}')">⚔️ CHALLENGE ${opp.name.toUpperCase()}'S TEAM</button>`;
+    }
+
+    return `
+      <div class="opponent-card ${opp.defeatedToday ? 'defeated-card' : ''}">
+        <div class="opp-card-header">
+          <strong style="font-size:15px;">👾 ${opp.name}</strong>
+          <span class="stat-line">Best Squad</span>
+        </div>
+        <div class="opp-best-team">${teamHtml}</div>
+        ${actionBtnHtml}
+      </div>
+    `;
+  }).join('');
+}
+
 async function loadArenaRoster() {
   if (!state.student) return;
   const listEl = document.getElementById('opponents-roster-list');
@@ -428,53 +474,14 @@ async function loadArenaRoster() {
   });
 
   if (!res || !res.success) {
-    if (listEl) listEl.innerHTML = '<p class="stat-line">Unable to load classmates right now. Try refreshing.</p>';
+    if (listEl && !state.opponents.length) {
+      listEl.innerHTML = '<p class="stat-line">Unable to load classmates right now. Try refreshing.</p>';
+    }
     return;
   }
 
   state.opponents = res.opponents || [];
-
-  if (listEl) {
-    if (!state.opponents.length) {
-      listEl.innerHTML = '<p class="stat-line">No other classmates in this guild yet.</p>';
-    } else {
-      listEl.innerHTML = state.opponents.map(opp => {
-        const hasTeam = opp.bestTeam && opp.bestTeam.length > 0;
-        const teamHtml = hasTeam
-          ? opp.bestTeam.map(pet => {
-              const elem = pet.element || getElementFromId(pet.itemId);
-              return `
-                <div class="opp-pet-mini">
-                  <img src="${pet.imageUrl}" alt="${pet.name}">
-                  <div style="font-size:9px;font-weight:800;margin-top:2px;max-width:72px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${pet.name}</div>
-                  <span class="badge ${pet.rarity}" style="font-size:8px;padding:2px 6px;margin-top:2px;">${ELEM_ICONS[elem]} ${pet.rarity}</span>
-                </div>
-              `;
-            }).join('')
-          : '<div style="grid-column:1/-1;text-align:center;font-size:11px;color:#a5b4fc;padding:12px;">No creatures summoned yet</div>';
-
-        let actionBtnHtml = '';
-        if (opp.defeatedToday) {
-          actionBtnHtml = `<div class="defeated-pill">✅ DEFEATED TODAY • Come back tomorrow!</div>`;
-        } else if (!hasTeam) {
-          actionBtnHtml = `<button class="game-btn btn-blue full-width" disabled>NO TEAM TO BATTLE</button>`;
-        } else {
-          actionBtnHtml = `<button class="game-btn btn-red full-width" onclick="startBotBattle('${opp.id}')">⚔️ CHALLENGE ${opp.name.toUpperCase()}'S TEAM</button>`;
-        }
-
-        return `
-          <div class="opponent-card ${opp.defeatedToday ? 'defeated-card' : ''}">
-            <div class="opp-card-header">
-              <strong style="font-size:15px;">👾 ${opp.name}</strong>
-              <span class="stat-line">Best Squad</span>
-            </div>
-            <div class="opp-best-team">${teamHtml}</div>
-            ${actionBtnHtml}
-          </div>
-        `;
-      }).join('');
-    }
-  }
+  renderOpponentsList();
 
   const lbEl = document.getElementById('leaderboard-list');
   if (lbEl) {
@@ -516,7 +523,9 @@ window.startBotBattle = (oppId) => {
     return alert('Select 1 to 3 creatures for your squad first!');
   }
   const opp = state.opponents.find(o => o.id === oppId);
-  if (!opp || !opp.bestTeam.length || opp.defeatedToday) return;
+  if (!opp || !opp.bestTeam.length || opp.defeatedToday) {
+    return alert('You already defeated this classmate today! Come back tomorrow.');
+  }
 
   SoundEngine.init();
   SoundEngine.startBattleBGM();
@@ -530,6 +539,7 @@ window.startBotBattle = (oppId) => {
     oppActive: 0,
     isMyTurn: true,
     finished: false,
+    saving: false,
     logText: `⚔️ Battle Started vs ${opp.name}'s Best Team! Your move!`
   };
 
@@ -798,22 +808,38 @@ function runBotTurn() {
 
 async function handleBattleEnd(didWin) {
   const b = state.battle;
+  if (!b || b.finished) return;
   b.finished = true;
   SoundEngine.stopBGM();
 
   const turnPill = document.getElementById('turn-indicator');
+  const leaveBtn = document.getElementById('leave-battle-btn');
+
   if (didWin) {
     SoundEngine.playSfx('victory');
     turnPill.textContent = '🏆 VICTORY! (+1 WIN)';
     turnPill.classList.remove('waiting');
-    b.logText = `🏆 You defeated ${b.defenderName}'s team (+1 Win)! Come back tomorrow to battle them again!`;
+    b.logText = `🏆 You defeated ${b.defenderName}'s team (+1 Win)! Saving victory...`;
+    b.saving = true;
+
+    // Immediately lock opponent locally so they cannot be battled again today
+    const defeatedOpp = state.opponents.find(o => o.id === b.defenderId);
+    if (defeatedOpp) defeatedOpp.defeatedToday = true;
+    renderOpponentsList();
+
     renderBattleArena();
+    if (leaveBtn) leaveBtn.disabled = true;
 
     await callGAS('recordDailyWin', {
       classId: state.student.classId,
       attackerId: state.student.id,
       defenderId: b.defenderId
     });
+
+    b.saving = false;
+    b.logText = `🏆 Victory Saved! ${b.defenderName} is locked until tomorrow. Challenge another classmate!`;
+    renderBattleArena();
+    if (leaveBtn) leaveBtn.disabled = false;
   } else {
     turnPill.textContent = '💀 DEFEAT — TRY AGAIN!';
     turnPill.classList.add('waiting');
@@ -890,10 +916,13 @@ function playSkillAnimation(action, didIUseIt) {
   }
 }
 
-window.exitBattleArena = () => {
+window.exitBattleArena = async () => {
+  if (state.battle && state.battle.saving) return;
   SoundEngine.stopBGM();
   state.battle = null;
   document.getElementById('pvp-battle-stage').classList.add('hidden');
   document.getElementById('pvp-lobby-view').classList.remove('hidden');
-  loadArenaRoster();
+  toggleLoader(true);
+  await loadArenaRoster();
+  toggleLoader(false);
 };
