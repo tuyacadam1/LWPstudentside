@@ -172,7 +172,7 @@ async function callGAS(action, payload = {}) {
   }
 }
 
-// --- LOGIN / LOGOUT ---
+// --- LOGIN / LOGOUT / REFRESH ---
 document.getElementById('student-login-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   SoundEngine.init();
@@ -213,9 +213,59 @@ document.getElementById('logout-btn').addEventListener('click', () => {
   SoundEngine.stopBGM();
   state.student = null;
   state.battle = null;
+  state.opponents = [];
   document.getElementById('dashboard-view').classList.add('hidden');
   document.getElementById('login-view').classList.remove('hidden');
 });
+
+async function refreshStudentPortal() {
+  if (!state.student) return;
+  if (state.battle && !state.battle.finished) {
+    return alert('Finish your current battle before refreshing!');
+  }
+
+  SoundEngine.playSfx('select');
+  const btn = document.getElementById('refresh-student-btn');
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = '⏳ SYNCING...';
+  }
+  toggleLoader(true);
+
+  const res = await callGAS('getStudentData', { studentId: state.student.id });
+  if (res && res.success) {
+    state.student = res.student;
+    state.pool = res.pool;
+    state.inventory = res.inventory;
+    state.pullCost = res.pullCost || 10;
+
+    // Keep valid selected squad items or auto-fill top 3 if empty
+    const validIds = new Set(state.inventory.map(p => p.pullId));
+    state.selectedSquad = state.selectedSquad.filter(p => validIds.has(p.pullId));
+    if (state.selectedSquad.length === 0 && state.inventory.length > 0) {
+      const sorted = [...state.inventory].sort((a, b) => {
+        const pa = (RARITY_STATS[a.rarity] || RARITY_STATS.Common).power;
+        const pb = (RARITY_STATS[b.rarity] || RARITY_STATS.Common).power;
+        return pb - pa;
+      });
+      state.selectedSquad = sorted.slice(0, 3);
+    }
+
+    renderHUD();
+    renderPoolPreview();
+    renderCollection();
+    renderSquadPicker();
+    await loadArenaRoster();
+  }
+
+  toggleLoader(false);
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = '🔄 REFRESH';
+  }
+}
+
+document.getElementById('refresh-student-btn')?.addEventListener('click', refreshStudentPortal);
 
 // --- MENU TABS ---
 document.querySelectorAll('.menu-btn').forEach(btn => {
